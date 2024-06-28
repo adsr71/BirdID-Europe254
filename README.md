@@ -13,11 +13,14 @@
 This repository contains models and scripts to identify European bird species in audio files. The models are trained on large amounts of audio data mainly from the [MfN Animal Sound Archive Berlin](https://www.museumfuernaturkunde.berlin/en/science/animal-sound-archive), the [Reference System of Bioacoustic Data](https://www.tierstimmenarchiv.de/RefSys/Preview.php?CurLa=en) and [Xeno-canto](https://xeno-canto.org/).
 
 ## About
-The models are developed at the [Museum für Naturkunde Berlin](https://www.museumfuernaturkunde.berlin/en). They are based on training deep neural networks (deep learning). Previous versions where successfully implemented and evaluated e.g. in the LifeCLEF Bird Identification Tasks [2018](https://www.imageclef.org/node/230) and [2019](https://www.imageclef.org/BirdCLEF2019). Further details on training setup and methods can be found in the corresponding CLEF papers:
+The models are developed at the [Museum für Naturkunde Berlin](https://www.museumfuernaturkunde.berlin/en). They are based on training deep neural networks (deep learning). Previous versions where successfully implemented and evaluated e.g. in the LifeCLEF Bird Identification Tasks [2018](https://www.imageclef.org/node/230), [2019](https://www.imageclef.org/BirdCLEF2019) and [2023](https://www.kaggle.com/competitions/birdclef-2023). Further details on training setup and methods can be found in the corresponding CLEF papers:
 
 [Lasseck M (2018) Audio-based Bird Species Identification with Deep Convolutional Neural Networks. In: CEUR Workshop Proceedings.](http://ceur-ws.org/Vol-2125/paper_140.pdf)
 
 [Lasseck M (2019) Bird Species Identification in Soundscapes. In: CEUR Workshop Proceedings.](http://ceur-ws.org/Vol-2380/paper_86.pdf)
+
+[Lasseck M (2023) Bird Species Recognition using Convolutional Neural Networks with Attention on Frequency Bands. In: CEUR Workshop Proceedings.](https://ceur-ws.org/Vol-3497/paper-175.pdf)
+
 
 Current models included in this repo are advanced versions specifically designed to work well for audio files and soundscape recordings containing European bird species. They are already used in practice in different biodiversity monitoring projects like e.g. [AMMOD](https://ammod.de/) and [DeViSe](https://www.idmt.fraunhofer.de/de/institute/projects-products/projects/devise.html).
 
