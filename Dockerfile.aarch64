@@ -1,0 +1,26 @@
+FROM  oblivion208/pytorch-aarch64:1.8.1-py38
+
+RUN apt-get update
+#RUN apt-get install -y libgl1-mesa-dev
+RUN apt-get install ffmpeg libsm6 libxext6 gfortran libmagic-dev -y
+RUN rm -rf /var/lib/apt/lists/*
+
+RUN pip install pysoundfile 
+RUN pip install librosa
+RUN pip install ffmpeg-python 
+RUN pip install python-magic 
+#RUN pip install gunicorn
+RUN pip install flask 
+RUN pip install python-dotenv
+RUN pip install pandas
+RUN pip install openpyxl
+
+
+WORKDIR /workspace
+RUN chmod -R a+w /workspace
+
+COPY ./* /workspace/
+
+EXPOSE 4000
+
+CMD ["python", "server.py"]
