@@ -66,7 +66,7 @@ conda install flask pandas openpyxl -c anaconda
 Clone the repository
 
 ```
-git clone https://code.naturkundemuseum.berlin/tsa/birdid-europe254-2103.git
+git clone https://github.com/adsr71/BirdID-Europe254.git
 cd birdid-europe254-2103
 ```
 
