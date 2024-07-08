@@ -63,7 +63,7 @@ conda install librosa ffmpeg-python timm python-magic -c conda-forge
 conda install flask pandas openpyxl -c anaconda
 ```
 
-Clone the repository
+Dpwmload or clone the repository
 
 ```
 git clone https://github.com/adsr71/BirdID-Europe254.git
