@@ -81,8 +81,7 @@ sortSpecies = False # Sort order of species columns by max value in text output 
 outputPrecision = 5 # Number of decimal places for results in output files
 
 # NNN
-#terminalOutputFormat = 'summery' # summery, summeryJson, naturblick2022, ammodJson, resultDictJson
-terminalOutputFormat = 'summary' # summary, summaryJson, resultDictJson, naturblick2022, ammodJson, none
+terminalOutputFormat = 'summary' # summary, summaryJson, resultDictJson, naturblick2022, none
 
 csvDelimiter = ';'
 

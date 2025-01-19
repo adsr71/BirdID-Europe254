@@ -32,7 +32,6 @@ def addAndParseConfigParams(parser):
 
     parser.add_argument('-d', '--debug', action='store_true', default=cfg.debug, help='Show some debug infos.')
 
-    #parser.add_argument('path', type=str, metavar='', help='Path to input audio file.')
     parser.add_argument('-i', '--inputPath', type=str, default=cfg.inputPath, metavar='', help='Path to input audio file or folder. Defaults to ' + str(cfg.inputPath) + '.')
 
     parser.add_argument('-s', '--startTime', type=float, default=0.0, metavar='', help='Start time of audio segment to analyze in seconds. Defaults to 0.')
@@ -66,17 +65,15 @@ def addAndParseConfigParams(parser):
     parser.add_argument('--csvDelimiter', type=str, default=cfg.csvDelimiter, metavar='', help='Delimiter used in CSV files. Defaults to ' + str(cfg.csvDelimiter) + '.')
     
 
-    parser.add_argument('--speciesPath', type=str, default=cfg.speciesSelectionPath, metavar='', help='Path to custom species metadata file or folder. If folder is provided, file needs to be named "species.csv". Defaults to ' + str(cfg.speciesSelectionPath) + '.')
+    parser.add_argument('--speciesPath', type=str, default=cfg.speciesSelectionPath, metavar='', help='Path to custom species metadata file or folder. If a folder is provided, the file needs to be named "species.csv". Defaults to ' + str(cfg.speciesSelectionPath) + '.')
 
     parser.add_argument('--errorLogPath', type=str, default=cfg.errorLogPath, metavar='', help='Path to error log file. Defaults to error-log.txt in outputDir.')
 
-    parser.add_argument('--terminalOutputFormat', type=str, default=cfg.terminalOutputFormat, metavar='', help='Format of terminal output. Value in [summery, summeryJson, ammodJson, naturblick2022, resultDictJson]. Defaults to ' + str(cfg.terminalOutputFormat) + '.')
+    parser.add_argument('--terminalOutputFormat', type=str, default=cfg.terminalOutputFormat, metavar='', help='Format of terminal output. Value in [summary, summaryJson, naturblick2022, resultDictJson, none]. Defaults to ' + str(cfg.terminalOutputFormat) + '.')
 
-    # ToAdd:
-    # -n, --nameType [en, de, sc, id]
-    # -t, --threshold
-    # -t2, --threshold2
+    # ToAddMaybe:
     # -sp, --species
+    # --overlapInSec
 
     args = parser.parse_args()
 
@@ -103,9 +100,6 @@ def addAndParseConfigParams(parser):
     
 
     cfg.modelSize = args.modelSize
-
-    # NNN
-    cfg.batchSizeFiles = args.batchSizeFiles
 
     cfg.batchSizeInference = args.batchSizeInference
     cfg.nCpuWorkers = args.nCpuWorkers
@@ -138,7 +132,7 @@ def addAndParseConfigParams(parser):
     
     
     
-    #print('cfg.channels', cfg.channels)
+    #print('cfg.channels', cfg.channels, flush=True)
 
 
     return parser
@@ -152,17 +146,17 @@ def init():
     # Sanity checks and corrections
     if cfg.segmentDurationMasked < 1.0:
         cfg.segmentDurationMasked = 1.0
-        print('Warning: segment duration < 1.0 not valid, set to 1.0')
+        print('Warning: segment duration < 1.0 not valid, set to 1.0', flush=True)
     if cfg.segmentDurationMasked > 5.0:
         cfg.segmentDurationMasked = 5.0
-        print('Warning: segment duration > 5.0 not valid, set to 5.0')
+        print('Warning: segment duration > 5.0 not valid, set to 5.0', flush=True)
 
     if cfg.segmentOverlapInPerc < 0:
         cfg.segmentOverlapInPerc = 0
-        print('Warning: segment overlap < 0 % not valid, set to 0 %')
+        print('Warning: segment overlap < 0 % not valid, set to 0 %', flush=True)
     if cfg.segmentOverlapInPerc > 80:
         cfg.segmentOverlapInPerc = 80
-        print('Warning: segment overlap > 80 % not valid, set to 80 %')
+        print('Warning: segment overlap > 80 % not valid, set to 80 %', flush=True)
 
 
     if cfg.modelSize == 'small':
@@ -172,24 +166,20 @@ def init():
     if cfg.modelSize == 'large':
         cfg.modelTorchScriptPath = 'ModelTorchScript_large.pt'
 
-    # NNN
-    #print('modelSize', cfg.modelSize)
-    #print('modelTorchScriptPath', cfg.modelTorchScriptPath)
-
     if cfg.minConfidence < 0.01:
         cfg.minConfidence = 0.01
-        print('Warning: minConfidence < 0.01 not valid, set to 0.01')
+        print('Warning: minConfidence < 0.01 not valid, set to 0.01', flush=True)
     if cfg.minConfidence > 0.99:
         cfg.minConfidence = 0.99
-        print('Warning: minConfidence > 0.99 not valid, set to 0.99')
+        print('Warning: minConfidence > 0.99 not valid, set to 0.99', flush=True)
 
     if cfg.channelPooling not in ['max', 'min']:
         cfg.channelPooling = 'max'
-        print('Warning: channelPooling not in [max, min], set to max')
+        print('Warning: channelPooling not in [max, min], set to max', flush=True)
 
     if cfg.nameType not in ['sci', 'en', 'de', 'ix', 'id']:
         cfg.nameType = 'sci'
-        print('Warning: nameType not in [sci, en, de, ix, id], set to sci')
+        print('Warning: nameType not in [sci, en, de, ix, id], set to sci', flush=True)
 
 
     # Set number of cpu workers for data loader (relative to num of cpus available, if negative)
@@ -206,7 +196,7 @@ def init():
     # Get species metadata
     cfg.speciesData = pd.read_csv(cfg.speciesPath, sep=';', encoding='utf-8')
     if len(cfg.speciesData.index) != cfg.nClasses:
-        print('Error: Wrong number of species. Please use original species.csv')
+        print('Error: Wrong number of species. Please use original species.csv', flush=True)
 
     # Init species selection
     cfg.classIxsSelection = list(range(cfg.nClasses))
@@ -217,7 +207,7 @@ def init():
     # Get custom species selection and min confidence
     if os.path.isdir(cfg.speciesSelectionPath):
         cfg.speciesSelectionPath = os.path.join(cfg.speciesSelectionPath, 'species.csv')
-        print('cfg.speciesSelectionPath', cfg.speciesSelectionPath)
+        print('cfg.speciesSelectionPath', cfg.speciesSelectionPath, flush=True)
 
     if os.path.isfile(cfg.speciesSelectionPath):
         cfg.speciesDataSelection = pd.read_csv(cfg.speciesSelectionPath, sep=';', encoding='utf-8')
@@ -228,19 +218,19 @@ def init():
             classIx = cfg.speciesDataSelection.at[ix, 'ix']
             cfg.minConfidences[classIx] = cfg.speciesDataSelection.at[ix, 'minConfidence']
     else:
-        print('Warning: Custom species metadata file not found. Using all species.')
+        print('Warning: Custom species metadata file not found. Using all species.', flush=True)
     
     if cfg.debug: 
-        print('nCpusAvailable', nCpusAvailable)
-        print('nCpuWorkers', cfg.nCpuWorkers)
-        print('gpuMode', cfg.gpuMode)
-        print('batchSizeInference', cfg.batchSizeInference)
-        print('batchSizeFiles', cfg.batchSizeFiles) # NNN
+        print('nCpusAvailable', nCpusAvailable, flush=True)
+        print('nCpuWorkers', cfg.nCpuWorkers, flush=True)
+        print('gpuMode', cfg.gpuMode, flush=True)
+        print('batchSizeInference', cfg.batchSizeInference, flush=True)
     else:
         # Suppress ”SourceChangeWarning” (Needed?)
         warnings.filterwarnings("ignore")
 
-    if not os.path.exists(cfg.outputDir): os.makedirs(cfg.outputDir)
+    if cfg.fileOutputFormats and not os.path.exists(cfg.outputDir): 
+        os.makedirs(cfg.outputDir)
 
 
     if cfg.clearPrevErrorLog:
@@ -260,14 +250,14 @@ def loadModel():
         n_gpus = torch.cuda.device_count()
         if n_gpus > 1:
             model = torch.nn.DataParallel(model).cuda()
-            #print('DataParallel')
+            #print('DataParallel', flush=True)
         else:
             model.cuda()
 
 
     if cfg.debug:
-        print('Model loaded')
-        print('n_gpus', n_gpus)
+        print('Model loaded', flush=True)
+        print('n_gpus', n_gpus, flush=True)
 
     #print('model', model)
     
@@ -293,10 +283,10 @@ def getAudioFilesInDir(path, allowed_filetypes=['wav', 'flac', 'mp3', 'ogg', 'm4
                 if fileId not in fileIds:
                     fileIds.append(fileId)
                 else:
-                    print('Warning duplicate filename:', fileId)
-                    print('Output files might only be writen for:', path)
+                    print('Warning duplicate filename:', fileId, flush=True)
+                    print('Output files might only be writen for:', path, flush=True)
 
-    print('Found {} audio files to analyze'.format(len(paths)))
+    print('Found {} audio files to analyze'.format(len(paths)), flush=True)
 
     return sorted(paths)
 
@@ -307,6 +297,12 @@ def clearErrorLog():
 def writeErrorLog(msg):
     with open(cfg.errorLogPath, 'a') as f:
         f.write(msg + '\n')
+
+def round_floats(o, precision):
+    if isinstance(o, float): return round(o, precision)
+    if isinstance(o, dict): return {k: round_floats(v, precision) for k, v in o.items()}
+    if isinstance(o, (list, tuple)): return [round_floats(x, precision) for x in o]
+    return o
 
 
 class AverageMeter(object):
@@ -377,7 +373,7 @@ class AudioDataset(Dataset):
         startSample = segment['startSample']
         endSample = segment['endSample']
 
-        #print(segmentIx, fileIx, channelIx, startSample)
+        #print(segmentIx, fileIx, channelIx, startSample, flush=True)
         
         specImage = getSpecSegment(self.audioDicts, fileIx, channelIx, startSample, endSample, self.segmentDurationInSamples)
 
@@ -440,11 +436,11 @@ def apply_high_pass_filter(input, sample_rate):
     # If anything went wrong (nan in array or max > 1.0 or min < -1.0) --> return original input
     #if np.isnan(output).any() or np.max(output) > 1.0 or np.min(output) < -1.0:
     if np.isnan(output).any():
-        print("Warning filter instability")
+        print("Warning filter instability", flush=True)
         output = input
 
 
-    # print(type, order, np.min(input), np.max(input), np.min(output), np.max(output))
+    # print(type, order, np.min(input), np.max(input), np.min(output), np.max(output), flush=True)
 
     # # Normalize to -3dB
     # if np.max(output):
@@ -467,17 +463,17 @@ def readAndPreprocessAudioFile(audioPath, startTime=0.0, endTime=None, channels=
             n_channels = f.channels
             nSamples = len(f)
             duration = nSamples/sample_rate_src
-            #print('duration', duration)
+            #print('duration', duration, flush=True)
 
         # Sanity check start/endTime
         if startTime and startTime >= duration:
             startTime = 0.0
             if cfg.debug:
-                print('Warning: startTime >= duration, reset startTime=0.0')
+                print('Warning: startTime >= duration, reset startTime=0.0', flush=True)
         if endTime and endTime >= duration:
             endTime = None
             if cfg.debug:
-                print('Warning: endTime >= duration, reset endTime=None')
+                print('Warning: endTime >= duration, reset endTime=None', flush=True)
 
 
         input_kwargs = {}
@@ -492,7 +488,7 @@ def readAndPreprocessAudioFile(audioPath, startTime=0.0, endTime=None, channels=
         audioData = sf.read(audioPath, **input_kwargs)[0]
 
         if cfg.debug:
-            print('Read audio file via sf', sample_rate_src, audioData.shape, audioData.dtype)
+            print('Read audio file via sf', sample_rate_src, audioData.shape, audioData.dtype, flush=True)
 
     else:
 
@@ -500,23 +496,23 @@ def readAndPreprocessAudioFile(audioPath, startTime=0.0, endTime=None, channels=
 
         # Get some metadata (sample_rate, n_channels)
         metadata = ffmpeg.probe(audioPath)['streams'][0]
-        #print(metadata)
+        #print(metadata, flush=True)
         n_channels = metadata['channels']
         # Unfortunately duration from metadata is not very precise
         duration = float(metadata['duration'])
         #duration = float(metadata['duration'])-float(metadata['start_time'])
         sample_rate_src = int(metadata['sample_rate'])
-        #print('duration', duration)
+        #print('duration', duration, flush=True)
 
         # Sanity check start/endTime
         if startTime and startTime >= duration-0.5:
             startTime = 0.0
             if cfg.debug:
-                print('Warning: startTime >= duration-0.5, reset startTime=0.0')
+                print('Warning: startTime >= duration-0.5, reset startTime=0.0', flush=True)
         if endTime and endTime >= duration-0.5:
             endTime = None
             if cfg.debug:
-                print('Warning: endTime >= duration-0.5, reset endTime=None')
+                print('Warning: endTime >= duration-0.5, reset endTime=None', flush=True)
 
         
         input_kwargs = {}
@@ -542,15 +538,15 @@ def readAndPreprocessAudioFile(audioPath, startTime=0.0, endTime=None, channels=
         audioData = np.reshape(out_np, (-1, n_channels))
 
         if cfg.debug:
-            print('Read audio file via ffmpeg', sample_rate_src, audioData.shape, audioData.dtype)
+            print('Read audio file via ffmpeg', sample_rate_src, audioData.shape, audioData.dtype, flush=True)
 
-    #print('audioData.shape', audioData.shape)
+    #print('audioData.shape', audioData.shape, flush=True)
     
     # Mix to mono
     if mono and audioData.shape[1] > 1:
         audioData = np.mean(audioData, axis=1, keepdims=True)
         if cfg.debug:
-            print('Applying mono mix', audioData.shape, audioData.dtype)
+            print('Applying mono mix', audioData.shape, audioData.dtype, flush=True)
 
     # Filter channels
     if channels:
@@ -575,7 +571,7 @@ def readAndPreprocessAudioFile(audioPath, startTime=0.0, endTime=None, channels=
     
     # Apply HP filter
     if cfg.debug:
-        print('Applying high pass filter')
+        print('Applying high pass filter', flush=True)
     audioData = apply_high_pass_filter(audioData, sample_rate_src)
     
     
@@ -584,7 +580,7 @@ def readAndPreprocessAudioFile(audioPath, startTime=0.0, endTime=None, channels=
     if sample_rate_src != cfg.samplerate:
 
         if cfg.debug:
-            print('Resample', sample_rate_src, '>', cfg.samplerate)
+            print('Resample', sample_rate_src, '>', cfg.samplerate, flush=True)
 
         # Make sure audio_data is in correct format for librosa processing
         if n_channels > 1:
@@ -613,7 +609,7 @@ def readAndPreprocessAudioFile(audioPath, startTime=0.0, endTime=None, channels=
     # audioData *= 0.71
 
 
-    #print('sample_rate_src', sample_rate_src, 'n_channels', n_channels, 'audioData.shape', audioData.shape)
+    #print('sample_rate_src', sample_rate_src, 'n_channels', n_channels, 'audioData.shape', audioData.shape, flush=True)
 
     # Return audio data and (maybe modified) startTime, endTime, channels
     return audioData, startTime, endTime, channels
@@ -625,7 +621,7 @@ def resizeSpecImage(specImage, imageSize):
     #specImagePil = specImagePil.resize(imageSize, Image.Resampling.LANCZOS) 
     # Cast to int8
     specImageResized = np.array(specImagePil, dtype=np.uint8)
-    #print('SpecImageResized.shape', SpecImageResized.shape)
+    #print('SpecImageResized.shape', SpecImageResized.shape, flush=True)
     return specImageResized
 
 
@@ -714,7 +710,7 @@ def predictSegmentsInParallel(loader, model):
                     logStr += ('TEST [{0}/{1}]\t'
                           'Time {batch_time.val:.3f} '.format(
                            i, len(loader), batch_time=batch_time))
-                    print(logStr)
+                    print(logStr, flush=True)
 
 
     return outputs.cpu().data.numpy()
@@ -724,11 +720,11 @@ def predictSegmentsInParallel(loader, model):
 def summarizePredictionsFileBased(predictions, poolingMethod='mean'):
 
     #nChannels, nTimeIntervals, nClasses = predictions.shape
-    #print(predictions.shape, predictions.dtype)
+    #print(predictions.shape, predictions.dtype, flush=True)
 
     #predictionsReshaped = predictions.reshape(nChannels*nTimeIntervals, nClasses)
     predictionsReshaped = predictions.reshape(-1, predictions.shape[-1])
-    #print(predictionsReshaped.shape, predictionsReshaped.dtype)
+    #print(predictionsReshaped.shape, predictionsReshaped.dtype, flush=True)
     
     # #EmphasizeExponent = 2 # 1,2,3,4
     #predictionsFileBased = np.mean(predictionsReshaped ** EmphasizeExponent, axis=0)
@@ -745,134 +741,54 @@ def summarizePredictionsFileBased(predictions, poolingMethod='mean'):
     return predictionsFileBased
 
 
-def getOutputInSummeryStyle(resultDict):
+def getOutputInSummaryStyle(resultDict):
 
-    # fileId (nChannels, nTimeIntervals, nClasses) species1 prob1, species2 prob2, species3 prob3
-
-    predictionsFileBased = summarizePredictionsFileBased(resultDict['probs'], poolingMethod=cfg.segmentPooling)
-
-    ixsBest = np.argsort(predictionsFileBased)[::-1]
+    # fileId (nChannels, nTimeIntervals, nClasses) --> species1 prob1, species2 prob2, species3 prob3
+    summary = resultDict['summary']
+    output = resultDict['fileId'] + ' ' + str(resultDict['probs'].shape) + ' --> '
     numOfPredictionsToShow = 3
-
-    output = resultDict['fileId'] + ' ' + str(resultDict['probs'].shape) + ' -> '
     for i in range(numOfPredictionsToShow):
-        classIx = ixsBest[i]
-        classProbability = predictionsFileBased[classIx]
-        output += str(cfg.speciesData.at[classIx, cfg.nameType]) + ' ' + "%.1f"%(classProbability*100.0) + ' %, '
-        
+        classIx = summary[i]['ix']
+        score = "%.1f"%(summary[i]['prob']*100.0)
+        output += str(cfg.speciesData.at[classIx, cfg.nameType]) + ' ' + score + '%, '
     # Remove last ,
     output = output[:-2]
 
     return output
 
+def getOutputInSummaryJsonStyle(resultDict):
+    numOfPredictionsToShow = 3
+    outputDict = {
+        'fileId': resultDict['fileId'],
+        'summary': resultDict['summary'][:numOfPredictionsToShow]
+    }
+    return json.dumps(outputDict, ensure_ascii=False, indent=2)
+
 
 def getOutputInNaturblick2022Style(resultDict):
 
-    # "{"result": [{"score": 22.9, "classId": "272618", "nameDt": "Tataren-Buchweizen", "nameLat": "Fagopyrum tataricum"}, {"score": 9.9, "classId": "8663", "nameDt": NaN, "nameLat": "Cycloloma atriplicifolium"}, {"score": 6.6, "classId": "122076", "nameDt": "Ästiger Schachtelhalm", "nameLat": "Equisetum ramosissimum"}]}"
-
-    predictionsFileBased = summarizePredictionsFileBased(resultDict['probs'], poolingMethod=cfg.segmentPooling)
-
-    ixsBest = np.argsort(predictionsFileBased)[::-1]
+    # Naturblick 2022 json format:
+    # {"result": [{"score": 95.0, "classId": "TurMer0", "nameDt": "Amsel", "nameLat": "Turdus merula"}, {"score": 94.9, "classId": "AcrSci0", "nameDt": "Teichrohrsänger", "nameLat": "Acrocephalus scirpaceus"}, {"score": 91.7, "classId": "FriCoe0", "nameDt": "Buchfink", "nameLat": "Fringilla coelebs"}]}
+    
+    # Use and convert first 3 summary results from resultDict
+    # [{"ix": 3, "name": "Turdus merula", "prob": 0.9504496455192566}, ... --> {"result": [{"score": 95.0, "classId": "TurMer0", "nameDt": "Amsel", "nameLat": "Turdus merula"}, ...
+    summary = resultDict['summary']
+    outputDict = {}
+    outputDict['result'] = []
     numOfPredictionsToShow = 3
-
-    output = {}
-    output['result'] = []
-
     for i in range(numOfPredictionsToShow):
+        classIx = summary[i]['ix']
+        score = float("%.1f"%(summary[i]['prob']*100.0))
+        outputDict['result'].append({
+            'score': score,
+            'classId': cfg.speciesData.at[classIx, 'id'],
+            'nameDt': cfg.speciesData.at[classIx, 'de'],
+            'nameLat': cfg.speciesData.at[classIx, 'sci']
+        })
 
-        classIx = ixsBest[i]
-        classProbability = predictionsFileBased[classIx]
-        classId = cfg.speciesData.at[classIx, 'id']
-        
-        if cfg.debug:
-            print(classId, classProbability)
-        
-        predObj = OrderedDict()
-        predObj['score'] = float("%.1f"%(classProbability*100.0))
-        predObj['classId'] = classId
-        predObj['nameDt'] = cfg.speciesData.at[classIx, 'de']
-        predObj['nameLat'] = cfg.speciesData.at[classIx, 'sci']
-        #PredObj['nameEn'] = cfg.speciesData.at[classIx, 'en']
-
-        output['result'].append(predObj)
-
-    # If docker environmental variable LANG=C.UTF-8 (pass -e LANG=C.UTF-8 or in Dockerfile ENV LANG C.UTF-8 if not default)
-    #outputJson = json.dumps(output, ensure_ascii=False, indent=2)
-    outputJson = json.dumps(output, ensure_ascii=False)
-
-    return outputJson
+    return json.dumps(outputDict, ensure_ascii=False)
 
 
-def getOutputInAmmodJsonStyle(resultDict):
-
-    # ToDo: use resultDict startTimes
-
-    '''
-    {
-        "fileId": str // file name
-        "ClassIds": [ str,..n ] // Old style ClassIds (e.g. AcrAru0)
-        "classIds": [ str,..n ] // Latin names of Classes
-        "sciName": [ str,..n ] // Latin names of Classes
-        "gerName": [ str,..n ] // German names of Classes
-        "engName": [ str,..n ] // English names of Classes
-        "channels": [
-                [
-            {
-                startTime: float (in s)
-                endTime: float // (in s)
-                predictions: {
-                    probabilities: [ float,...n]  // prediction probabilities for n classes
-                    logits: [ float,...n]  // prediction logits for n classes
-                }
-            },...
-        ]
-    }
-    '''
-
-    output = {}
-    #output['fileId'] = audioPath[:-4]
-    output['fileId'] = resultDict['fileId']
-    
-    output['ClassIds'] = cfg.speciesData['id'].tolist()
-    output['classIds'] = cfg.speciesData['sci'].tolist()
-    output['sciName'] = cfg.speciesData['sci'].tolist()
-    output['gerName'] = cfg.speciesData['de'].tolist()
-    output['engName'] = cfg.speciesData['en'].tolist()
-
-    # np.float32 not JSON serializable --> cast to python float
-    predictions = resultDict['probs'].astype(float)
-
-
-    nTimeIntervals = predictions.shape[1]
-
-    startTimes = np.array(resultDict['startTimes'])
-    #endTimes = startTimes + cfg.segmentDurationMasked
-    endTimes = np.array(resultDict['endTimes'])
-
-    output['channels'] = []
-    
-    nChannels = predictions.shape[0]
-    for channelIx in range(nChannels):
-
-        intervalDicts = []
-
-        for intervalIx in range(nTimeIntervals):
-            intervalDict = {}
-            intervalDict['startTime'] = startTimes[intervalIx]
-            intervalDict['endTime'] = endTimes[intervalIx]
-            intervalDict['predictions'] = {}
-            intervalDict['predictions']['probabilities'] = list(predictions[channelIx][intervalIx])
-            #intervalDict['predictions']['logits'] = list(predictions[channelIx][intervalIx])
-
-            intervalDicts.append(intervalDict)
-
-        output['channels'].append(intervalDicts)
-
-    # If docker environmental variable LANG=C.UTF-8 (pass -e LANG=C.UTF-8 or in Dockerfile ENV LANG C.UTF-8 if not default)
-    #outputJson = json.dumps(output, ensure_ascii=False, indent=2)
-    outputJson = json.dumps(output, ensure_ascii=False)
-    
-    return outputJson
 
 def mergeOverlappingLabels(df):
 
@@ -884,7 +800,7 @@ def mergeOverlappingLabels(df):
 
     # Get distinct species
     speciesList = df['species'].unique()
-    print('speciesList', speciesList)
+    #print('speciesList', speciesList, flush=True)
 
     labels_new = []
 
@@ -924,13 +840,13 @@ def mergeOverlappingLabels(df):
 
 def writeResultToFile(resultDict, outputDir, fileOutputFormats):
 
-    # Collect paths of writen files to reference for e.g. download in browser
-    outputPaths = []
+    # Collect names of writen files to reference for e.g. download in browser
+    outputFiles = []
 
     # Check if format is valid
     for fileOutputFormat in fileOutputFormats:
         if fileOutputFormat not in cfg.fileOutputFormatsValid:
-            print('Warning, invalid file output format:', fileOutputFormat)
+            print('Warning, invalid file output format:', fileOutputFormat, flush=True)
 
 
     # ToDo: Add start/end time info to filename ?
@@ -941,7 +857,8 @@ def writeResultToFile(resultDict, outputDir, fileOutputFormats):
     
     # Write raw data as dict to pkl files
     if 'raw_pkl' in fileOutputFormats:
-        path = outputDir + fileId + '.pkl'
+        filename = fileId + '.pkl'
+        path = outputDir + filename
         with open(path, 'wb') as f:
             if cfg.useFloat16InPkl:
                 resultDictFloat16 = resultDict.copy()
@@ -949,7 +866,7 @@ def writeResultToFile(resultDict, outputDir, fileOutputFormats):
                 pickle.dump(resultDictFloat16, f, protocol=pickle.HIGHEST_PROTOCOL)
             else:
                 pickle.dump(resultDict, f, protocol=pickle.HIGHEST_PROTOCOL)
-            outputPaths.append(path)
+            outputFiles.append(filename)
 
 
     if 'raw_csv' in fileOutputFormats or 'raw_excel' in fileOutputFormats:
@@ -975,31 +892,33 @@ def writeResultToFile(resultDict, outputDir, fileOutputFormats):
             #df['startTime [s]'] = df['startTime [s]'].map(lambda x: ('%.3f' % x).rstrip('0').rstrip('.'))
             #df['endTime [s]'] = df['endTime [s]'].map(lambda x: ('%.3f' % x).rstrip('0').rstrip('.'))
 
-            #print('df.dtypes', df.dtypes)
+            #print('df.dtypes', df.dtypes, flush=True)
             dfs.append(df)
 
             # Write to csv (one csv per channel)
             if 'raw_csv' in fileOutputFormats:
-                #csvPath = outputDir + fileId + '_c' + str(channelIx+1)
-                csvPath = outputDir + fileId + '_c' + str(resultDict['channels'][channelIx])
+                filename = fileId + '_c' + str(resultDict['channels'][channelIx])
                 if cfg.sortSpecies:
-                    csvPath += '_sorted.csv'
+                    filename += '_sorted.csv'
                 else:
-                    csvPath += '.csv'
-                df.to_csv(csvPath, index=False, sep=cfg.csvDelimiter, float_format=float_format)
-                outputPaths.append(csvPath)
+                    filename += '.csv'
+                
+                path = outputDir + filename
+                df.to_csv(path, index=False, sep=cfg.csvDelimiter, float_format=float_format)
+                outputFiles.append(filename)
 
         # Write to excel file (one sheet per channel)
         if 'raw_excel' in fileOutputFormats:
             if cfg.sortSpecies:
-                excelPath = outputDir + fileId + '_sorted.xlsx'
+                filename = fileId + '_sorted.xlsx'
             else:
-                excelPath = outputDir + fileId + '.xlsx'
-            with pd.ExcelWriter(excelPath, engine='openpyxl') as writer:
+                filename = fileId + '.xlsx'
+            path = outputDir + filename
+            with pd.ExcelWriter(path, engine='openpyxl') as writer:
                 for channelIx in range(nChannels):
                     sheet_name = 'channel ' + str(resultDict['channels'][channelIx])
                     dfs[channelIx].to_excel(writer, index=False, sheet_name=sheet_name, float_format=float_format)
-                outputPaths.append(excelPath)
+                outputFiles.append(filename)
 
     # Write label files (intervals of species predictions exceeding minConfidence)
     if 'labels' in ' '.join(fileOutputFormats):
@@ -1040,7 +959,7 @@ def writeResultToFile(resultDict, outputDir, fileOutputFormats):
                         df_dict['endTime [s]'].append(endTime)
                         df_dict['species'].append(className)
                         df_dict['confidence'].append(confidence)
-                        #print(segmIx, startTime, endTime, classIx, className, confidence)
+                        #print(segmIx, startTime, endTime, classIx, className, confidence, flush=True)
 
             df = pd.DataFrame.from_dict(df_dict)
 
@@ -1051,29 +970,35 @@ def writeResultToFile(resultDict, outputDir, fileOutputFormats):
             if cfg.mergeLabels:
                 df = mergeOverlappingLabels(df)
 
-            #print(df)
+            #print(df, flush=True)
 
             if 'labels_excel' in fileOutputFormats:
-                path = outputDir + fileId + '_labels.xlsx'
+                filename = fileId + '_labels.xlsx'
+                path = outputDir + filename
                 df.to_excel(path, float_format=float_format, index=False, engine='openpyxl')
-                outputPaths.append(path)
+                outputFiles.append(filename)
 
             if 'labels_csv' in fileOutputFormats:
-                path = outputDir + fileId + '_labels.csv'
+                filename = fileId + '_labels.csv'
+                path = outputDir + filename
                 df.to_csv(path, index=False, sep=cfg.csvDelimiter, float_format=float_format)
-                outputPaths.append(path)
+                outputFiles.append(filename)
 
             if 'labels_audacity' in fileOutputFormats:
                 df_audacity = df.copy()
-                # Format to string (0.9123 --> [91.2%])
-                df_audacity['confidence'] = df_audacity['confidence'].apply(lambda x: '[' + '{:.1f}'.format(x*100.0) + '%]')
-                # Join species and confidence (species [91.2%])
-                df_audacity['label'] = df_audacity['species'] + ' ' + df_audacity['confidence']
-                df_audacity = df_audacity.drop(columns=['species', 'confidence'])
+
+                # Check if there are any labels (predictions above threshold)
+                if len(df_audacity.index):
+                    # Format to string (0.9123 --> [91.2%])
+                    df_audacity['confidence'] = df_audacity['confidence'].apply(lambda x: '[' + '{:.1f}'.format(x*100.0) + '%]')
+                    # Join species and confidence (species [91.2%])
+                    df_audacity['label'] = df_audacity['species'] + ' ' + df_audacity['confidence']
+                    df_audacity = df_audacity.drop(columns=['species', 'confidence'])
                 
-                path = outputDir + fileId + '_labels_audacity.txt'
+                filename = fileId + '_labels_audacity.txt'
+                path = outputDir + filename
                 df_audacity.to_csv(path, sep ='\t', header=False, index=False)
-                outputPaths.append(path)
+                outputFiles.append(filename)
 
             if 'labels_raven' in fileOutputFormats:
 
@@ -1087,36 +1012,38 @@ def writeResultToFile(resultDict, outputDir, fileOutputFormats):
                 df_raven.insert(loc=6, column='High Freq (Hz)', value=cfg.melEndFreq)
                 df_raven.rename(columns={"species": "Species", "confidence": "Confidence"}, inplace=True)
 
-                #path = outputDir + fileId + '_labels_raven.txt'
-                path = outputDir + fileId + '.BirdID.selections.txt'
+                filename = fileId + '.BirdID.selections.txt'
+                path = outputDir + filename
                 df_raven.to_csv(path, sep ='\t', index=False, float_format=float_format)
-                outputPaths.append(path)
+                outputFiles.append(filename)
 
 
+    return outputFiles
 
 
+def createTerminalOutput(resultDict, terminalOutputFormat='summary'):
 
-    return outputPaths
+    output = None
 
+    if terminalOutputFormat == 'summary':
+        output = getOutputInSummaryStyle(resultDict)
 
-def createTerminalOutput(resultDict, terminalOutputFormat='summery'):
+    if terminalOutputFormat == 'summaryJson':
+        output = getOutputInSummaryJsonStyle(resultDict)
 
-
-    if terminalOutputFormat == 'summery':
-        output = getOutputInSummeryStyle(resultDict)
-
-    if terminalOutputFormat == 'naturblick2022' or terminalOutputFormat == 'summeryJson':
+    if terminalOutputFormat == 'naturblick2022':
         output = getOutputInNaturblick2022Style(resultDict)
-
-    if terminalOutputFormat == 'ammodJson':
-        output = getOutputInAmmodJsonStyle(resultDict)
 
     if terminalOutputFormat == 'resultDictJson':
         resultDictJsonReady = resultDict.copy()
         # Numpy ndarray is not JSON serializable --> convert to list of lists
         resultDictJsonReady['probs'] = resultDictJsonReady['probs'].tolist()
-        output = json.dumps(resultDictJsonReady, ensure_ascii=False)
+        # Round floats to output precision
+        resultDictJsonReady['probs'] = round_floats(resultDictJsonReady['probs'], cfg.outputPrecision)
+        output = json.dumps(resultDictJsonReady, ensure_ascii=False, indent=2)
 
+    if terminalOutputFormat == 'none':
+        output = None
 
 
     return output
@@ -1157,7 +1084,7 @@ def prepareAudioDict(paramDict):
         audioDict['path'] = audioPath
         audioDict['fileId'] = os.path.splitext(os.path.basename(audioPath))[0]
         audioDict['startTime'] = startTime
-        #print('startTime', startTime)
+        #print('startTime', startTime, flush=True)
         audioDict['endTime'] = endTime
         audioDict['channels'] = channels
         audioDict['nFrames'] = nFrames
@@ -1181,6 +1108,104 @@ def prepareAudioDict(paramDict):
         return None     
 
 
+def getResultDict(paramDict):
+
+    # Create result dictionary and write output file(s)
+
+    # Get audioDict and restore config
+    audioDict = paramDict['audioDict']
+    cfg.setConfig(paramDict['configDict'])
+
+    try:
+
+        # Adjust startTimes relative to startTime (add startTime as offset)
+        startTime = audioDict['startTime']
+        startTimes = audioDict['startTimes']
+        endTimes = audioDict['endTimes']
+
+        if startTime:
+            startTimes = [x+startTime for x in startTimes]
+            endTimes = [x+startTime for x in endTimes]
+
+
+        # Create result dict
+        resultDict = {}
+
+        resultDict['modelId'] = 'birdid-europe254-2103'
+
+        resultDict['fileId'] = audioDict['fileId']
+        resultDict['filePath'] = audioDict['path']
+        resultDict['startTime'] = audioDict['startTime']
+        resultDict['endTime'] = audioDict['endTime']
+
+        resultDict['channels'] = audioDict['channels']
+
+        resultDict['segmentDuration'] = cfg.segmentDurationMasked
+        
+        resultDict['classIds'] = cfg.speciesData['id'].tolist()
+        resultDict['classNamesScientific'] = cfg.speciesData['sci'].tolist()
+        resultDict['classNamesGerman'] = cfg.speciesData['de'].tolist()
+        #resultDict['classNamesEnglish'] = cfg.speciesData['en'].tolist()
+
+        #resultDict['nChannels'] = predictions.shape[0]
+        #resultDict['nSegments'] = predictions.shape[1]
+        #resultDict['nClasses'] = predictions.shape[2]
+
+        resultDict['startTimes'] = startTimes
+        resultDict['endTimes'] = endTimes
+
+        
+        # Prediction Matrix: nChannels x nSegments x nClasses
+        resultDict['probs'] = audioDict['probs']
+        #resultDict['logits']
+        #resultDict['targets']
+
+        #import sys
+        #print('args')
+        #print(sys.argv)
+
+        # Add summary
+        predictionsFileBased = summarizePredictionsFileBased(resultDict['probs'], poolingMethod=cfg.segmentPooling)
+        ixsBest = np.argsort(predictionsFileBased)[::-1]
+        resultDict['summary'] = []
+        numOfPredictionsInSummary = 5 # 8
+        for i in range(numOfPredictionsInSummary):
+            classIx = ixsBest[i]
+            classProbability = predictionsFileBased[classIx]
+            resultDict['summary'].append({
+                'ix': int(classIx),
+                #'id': cfg.speciesData.at[classIx, 'id'],
+                #'sci': cfg.speciesData.at[classIx, 'sci'],
+                #'en': cfg.speciesData.at[classIx, 'en'],
+                #'de': cfg.speciesData.at[classIx, 'de'],
+                'name': cfg.speciesData.at[classIx, cfg.nameType],
+                #'prob': float(classProbability)
+                'prob': round(float(classProbability), cfg.outputPrecision)
+                })
+
+        
+        # Add infos on output files
+        resultDict['outputDir'] = cfg.outputDir
+
+        # Write results to file
+        if cfg.terminalOutputFormat != 'naturblick2022':
+            resultDict['outputFiles'] = writeResultToFile(resultDict, cfg.outputDir, cfg.fileOutputFormats)
+        
+        # Create terminal output
+        terminalOutput = createTerminalOutput(resultDict, terminalOutputFormat=cfg.terminalOutputFormat)
+        
+        if terminalOutput:
+            print(terminalOutput, flush=True)
+
+        return resultDict
+    
+    except:
+        # Print traceback
+        msg = 'Error: Cannot create resultDict for file {}\n{}'.format(audioDict['path'], traceback.format_exc())
+        print(msg, flush=True)
+        writeErrorLog(msg)
+        return None     
+
 def processFiles(model, audioPath):
 
     if cfg.debug:
@@ -1194,9 +1219,8 @@ def processFiles(model, audioPath):
     else:
         paths = getAudioFilesInDir(audioPath)
     
-    # Collect terminalOutput per file and paths of output files
-    terminalOutputs = []
-    outputPaths = []
+    # Collect resultDict per file
+    resultDicts = []
 
     # Get batches of file paths with size cfg.batchSizeFiles to read and preprocess in parallel
     for ix in range(0, len(paths), cfg.batchSizeFiles):
@@ -1224,23 +1248,20 @@ def processFiles(model, audioPath):
         if None in audioDicts:
             audioDicts = [x for x in audioDicts if x != None]
 
-        normalize = transforms.Normalize(mean=cfg.imageMean, std=cfg.imageStd)
-        #AudioDatasetSingleFileObj = AudioDatasetSingleFileData(audioData, transform=transforms.Compose([transforms.ToTensor(),normalize]))
-        audioDataSetObj = AudioDataset(audioDicts, transform=transforms.Compose([transforms.ToTensor(), normalize]))
         
+        # Prepare audio dataset for inference
+        normalize = transforms.Normalize(mean=cfg.imageMean, std=cfg.imageStd)
+        audioDataSetObj = AudioDataset(audioDicts, transform=transforms.Compose([transforms.ToTensor(), normalize]))
         nSegmentsPerBatchOfFiles = len(audioDataSetObj)
 
         if cfg.debug:
-            print('nSegmentsPerBatchOfFiles', nSegmentsPerBatchOfFiles)
+            print('nSegmentsPerBatchOfFiles', nSegmentsPerBatchOfFiles, flush=True)
 
 
         # If inference fails (happens in rare cases), try again
         inferenceSuccess = False
-        inferenceAttemptsMax = 2
         inferenceAttempts = 0
-
-        while not inferenceSuccess and inferenceAttempts < inferenceAttemptsMax:
-
+        while not inferenceSuccess and inferenceAttempts < cfg.inferenceAttemptsMax:
             try:
                 # Create data loader
                 loader = torch.utils.data.DataLoader(audioDataSetObj, batch_size=cfg.batchSizeInference, shuffle=False, num_workers=cfg.nCpuWorkers, pin_memory=True, timeout=cfg.dataLoaderTimeOut)
@@ -1253,83 +1274,42 @@ def processFiles(model, audioPath):
                 writeErrorLog(msg)
                 inferenceSuccess = False
 
-
             inferenceAttempts += 1
         
 
-        # Iterate over files in batch
+        # Iterate over files in batch and collect predictions per file
+        paramDicts = []
         nFilesPerBatch = len(audioDicts)
         for filesIx in range(nFilesPerBatch):
-
             # Get outputs per files
             segmentOffsetIx = audioDataSetObj.segmentOffsetIxAtFileIx[filesIx]
             nSegments = audioDicts[filesIx]['nSegments']
-            #print(filesIx, segmentOffsetIx, nSegmentsPerFile)
+            #print(filesIx, segmentOffsetIx, nSegmentsPerFile, flush=True)
             outputsPerFile = outputs[segmentOffsetIx:segmentOffsetIx+nSegments]
-
             # Reshape output of size (nSegments, nClasses) to (nChannels, nTimeIntervals, nClasses)
             predictions = outputsPerFile.reshape(audioDicts[filesIx]['nChannels'], audioDicts[filesIx]['nTimeIntervals'], -1)
-            #print(filesIx, audioDicts[filesIx]['fileId'], predictions.shape)
+            #print(filesIx, audioDicts[filesIx]['fileId'], predictions.shape, flush=True)
+            # Add predictions (probs) to audioDict
+            audioDicts[filesIx]['probs'] = predictions
+            # Collect audioDicts and congigDicts for multiprocessing
+            paramDicts.append({'audioDict': audioDicts[filesIx], 'configDict': cfg.getConfig()})
 
-            # Adjust startTimes relative to startTime (add startTime as offset)
-            startTime = audioDicts[filesIx]['startTime']
-            startTimes = audioDicts[filesIx]['startTimes']
-            endTimes = audioDicts[filesIx]['endTimes']
+        
+        # Use multiprocessing (if more than one file) to get resultDicts
+        if len(paramDicts) > 1:
+            with Pool(cfg.batchSizeFiles) as p:
+                resultDicts = p.map(getResultDict, paramDicts)
+        else:
+            resultDicts = []
+            resultDicts.append(getResultDict(paramDicts[0]))
 
-            if startTime:
-                startTimes = [x+startTime for x in startTimes]
-                endTimes = [x+startTime for x in endTimes]
 
-
-
-            # Create result dict
-            resultDict = {}
-
-            resultDict['modelId'] = 'birdid-europe254-2103'
-
-            
-            resultDict['fileId'] = audioDicts[filesIx]['fileId']
-            resultDict['filePath'] = audioDicts[filesIx]['path']
-            resultDict['startTime'] = audioDicts[filesIx]['startTime']
-            resultDict['endTime'] = audioDicts[filesIx]['endTime']
-
-            resultDict['channels'] = audioDicts[filesIx]['channels']
-
-            resultDict['segmentDuration'] = cfg.segmentDurationMasked
-            
-            resultDict['classIds'] = cfg.speciesData['id'].tolist()
-            resultDict['classNamesScientific'] = cfg.speciesData['sci'].tolist()
-            resultDict['classNamesGerman'] = cfg.speciesData['de'].tolist()
-            #resultDict['classNamesEnglish'] = cfg.speciesData['en'].tolist()
-
-            #resultDict['nChannels'] = predictions.shape[0]
-            #resultDict['nSegments'] = predictions.shape[1]
-            #resultDict['nClasses'] = predictions.shape[2]
-
-            resultDict['startTimes'] = startTimes
-            resultDict['endTimes'] = endTimes
-
-            
-            # Prediction Matrix: nChannels x nSegments x nClasses
-            resultDict['probs'] = predictions
-            #resultDict['probs'] = predictions.astype(np.float16)    # reduced size with 16 bit floats (ToDo later)
-            #resultDict['logits']
-            #resultDict['targets']
-
-            # Write results to file
-            if cfg.terminalOutputFormat != 'naturblick2022':
-                outputPaths += writeResultToFile(resultDict, cfg.outputDir, cfg.fileOutputFormats)
-            
-            # Create terminal output
-            terminalOutput = createTerminalOutput(resultDict, terminalOutputFormat=cfg.terminalOutputFormat)
-            print(terminalOutput)
-
-            terminalOutputs.append(terminalOutput)
     
     if cfg.debug:
-        print('ElapsedTime', time.time()-startTimeProcessFile)
+        print('ElapsedTime', time.time()-startTimeProcessFile, flush=True)
 
-    return terminalOutputs, outputPaths        
+
+    return resultDicts   
 
 
 
@@ -1378,7 +1358,7 @@ if __name__ == "__main__":
     init()
     model = loadModel()
     #processFile(model, audioPath, startTime=startTime, endTime=endTime)
-    terminalOutputs, outputPaths = processFiles(model, audioPath)
+    resultDicts = processFiles(model, audioPath)
 
 
 

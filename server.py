@@ -1,32 +1,16 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
-
-# sources: 
-    # https://blog.miguelgrinberg.com/post/designing-a-restful-api-with-python-and-flask
-    # http://flask.pocoo.org/docs/1.0/patterns/fileuploads/
-
 '''
 # Info/Help
 
-# Run docker
-docker run -it -p 4000:4000 --ipc=host --name birdid --rm birdid-europe254-2103-flask-v05
-
-# Run docker with gpu support and mounted volume
-DATADIR=/path/to/audiodir
-docker run -it -p 4000:4000 --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=all -v $DATADIR:/mnt --ipc=host --name birdid --rm birdid-europe254-2103-flask-v05
-
-
-
 #####  HOW TO  #####
 
-# Identify in browser via file upload
+# Inference in browser via file upload
 http://localhost:4000/
 
-# Identify by posting file
-curl -F "file=@/path/to/file.mp3" "http://localhost:4000/identify"
+# Inference by posting file
+curl -F "file=@/path/to/file.mp3" "http://localhost:4000/inference"
 
-# Identify by passing path to file in mounted volume
-curl "http://localhost:4000/identify?path=/mnt/audiofile.wav"
+# Inference by passing path to file in mounted volume
+curl "http://localhost:4000/inference?path=/mnt/audiofile.wav"
 
 
 
@@ -45,6 +29,7 @@ from werkzeug.utils import secure_filename
 import json
 import os
 from multiprocessing import freeze_support
+import numpy as np
 
 import argparse
 import config as cfg
@@ -55,10 +40,12 @@ import inference
 debug_mode = False #False #True
 host = '0.0.0.0'
 port = 4000
+serverOutputFormat = 'summaryJson'
+indent = None
 
+serverOutputFormatsValid = ['summaryJson', 'resultDictJson', 'naturblick2022']
 
-# To temporary upload files passed via curl
-#uploadDirTemp = '_UploadDirTemp/'
+# To temporary upload files passed via curl or browser
 uploadDirTemp = '_UploadDirTemp/'
 if not os.path.exists(uploadDirTemp): os.makedirs(uploadDirTemp)
 
@@ -72,19 +59,6 @@ refSysLinkPrefix = 'http://www.tierstimmenarchiv.de/RefSys/SelectPreviewSpeciesV
 
 app = Flask(__name__)
 
-
-
-if debug_mode:
-    app.config['JSON_AS_ASCII'] = False # "Drosselrohrs\u00e4nger" --> "Drosselrohrsänger" (possible security risc!)
-
-
-
-
-def toJson(obj):
-    if debug_mode:
-        return jsonify(obj)
-    else:
-        return json.dumps(obj, ensure_ascii=False) # no need for app.config['JSON_AS_ASCII'] = False
 
 def uploadPostedFile(request):
 
@@ -113,7 +87,7 @@ def cleanUploadDirTemp(audioPath):
             os.remove(os.path.join(uploadDirTemp, f))
 
 
-@app.route('/identify', methods=['GET', 'POST'])
+@app.route('/inference', methods=['GET', 'POST'])
 def processRequest():
 
 
@@ -137,9 +111,10 @@ def processRequest():
 
 
     # Identify by passing path to file in mounted volume, e.g.
-    # curl "http://localhost:4000/identify?path=/mnt/TestFiles/FriCoe00001.wav"
-    #audioPath = request.args.get('path', default='', type=str)
-    cfg.inputPath = request.args.get('path', default='', type=str)
+    # curl "http://localhost:4000/inference?path=/mnt/TestFiles/FriCoe00001.wav"
+    
+    #cfg.inputPath = request.args.get('path', default='', type=str)
+    cfg.inputPath = request.args.get('path', default=cfg.inputPath, type=str)
     
 
     cfg.outputDir = request.args.get('outputDir', default=cfg.outputDir, type=str)
@@ -149,18 +124,17 @@ def processRequest():
         if os.path.isfile(cfg.inputPath):
             cfg.outputDir = os.path.dirname(cfg.inputPath) + os.sep
         else: cfg.outputDir = cfg.inputPath
-
+    
     # Add '/' to outputDir
     if cfg.outputDir[-1] != os.sep:
         cfg.outputDir += os.sep
     
-    if not os.path.exists(cfg.outputDir): os.makedirs(cfg.outputDir)
 
     # To check
     cfg.errorLogPath = cfg.outputDir + 'error-log.txt'
 
 
-    # Format of output file(s). Values in: pkl,csv,csv_sorted
+    # Format of output file(s). Values in: raw_pkl,raw_excel,raw_csv,labels_excel,labels_csv,labels_audacity,labels_raven
     fileOutputFormatsStr = request.args.get('fileOutputFormats', default=cfg.fileOutputFormats, type=str)
     if isinstance(fileOutputFormatsStr, list):
         cfg.fileOutputFormats = fileOutputFormatsStr
@@ -170,36 +144,61 @@ def processRequest():
         else:
             cfg.fileOutputFormats = []
     
+    if cfg.fileOutputFormats and not os.path.exists(cfg.outputDir): 
+        os.makedirs(cfg.outputDir)
 
 
-
-    # Format of terminal output. Values: summery, summeryJson, naturblick2022, ammodJson
-    cfg.terminalOutputFormat = request.args.get('terminalOutputFormat', default=cfg.terminalOutputFormat, type=str)
+    # Format of terminal output. Values: summary, summaryJson, naturblick2022
+    #cfg.terminalOutputFormat = request.args.get('terminalOutputFormat', default=cfg.terminalOutputFormat, type=str)
+    serverOutputFormatRequested = request.args.get('serverOutputFormat', default=serverOutputFormat, type=str)
+    if serverOutputFormatRequested not in serverOutputFormatsValid:
+        serverOutputFormatRequested = 'summaryJson'
+        #print('Warning: serverOutputFormat not valid, set to summaryJson', flush=True)
 
 
     # Identify by posting file (to pass url params pass post request first)
-    # curl -F "file=@/path/to/file.mp3" "http://localhost:4000/identify"
+    # curl -F "file=@/path/to/file.mp3" "http://localhost:4000/inference"
     if request.method == 'POST':
+        cleanUploadDirTemp(uploadDirTemp) # Remove (previous) files in uploadDirTemp
+        cfg.outputDir = uploadDirTemp
         cfg.inputPath = uploadPostedFile(request)
+        #cfg.terminalOutputFormat = 'naturblick2022'
 
     
     audioPath = cfg.inputPath
-    terminalOutputs, outputPaths = inference.processFiles(model, audioPath)
-
-    
-
-    if request.method == 'POST' and os.path.isfile(audioPath):
-        cleanUploadDirTemp(audioPath) # Remove files in uploadDirTemp
+    resultDicts = inference.processFiles(model, audioPath)
 
 
-    # ToDo: handle (naturblick2022) output (if audioPath is dir) --> terminalOutputs is now list
-    # Deal with audioPath is file --> list has only 1 item vs. dir
-    # Deal with terminalOutput types
 
-    if cfg.terminalOutputFormat == 'naturblick2022':
-        output = terminalOutputs[0]
-    else:
-        output = json.dumps(terminalOutputs, ensure_ascii=False, indent=2)
+    if serverOutputFormatRequested == 'summaryJson':
+        numOfPredictionsToShow = 3
+        outputDict = {}
+        outputDict['results'] = []
+        for resultDict in resultDicts:
+            outputDict['results'].append({
+                'fileId': resultDict['fileId'],
+                'summary': resultDict['summary'][:numOfPredictionsToShow]
+            })
+        output = json.dumps(outputDict, ensure_ascii=False, indent=indent)
+
+ 
+    if serverOutputFormatRequested == 'resultDictJson':
+        # Make JSON serializable
+        resultDictsJsonReady = {}
+        resultDictsJsonReady['results'] = []
+        for resultDict in resultDicts:
+            resultDictJsonReady = resultDict.copy()
+            # Numpy ndarray is not JSON serializable --> convert to list of lists
+            resultDictJsonReady['probs'] = resultDictJsonReady['probs'].tolist()
+            # Round floats to output precision
+            resultDictJsonReady['probs'] = inference.round_floats(resultDictJsonReady['probs'], cfg.outputPrecision)
+            resultDictsJsonReady['results'].append(resultDictJsonReady)
+
+        output = json.dumps(resultDictsJsonReady, ensure_ascii=False, indent=indent)
+
+    if serverOutputFormatRequested == 'naturblick2022':
+        output = inference.getOutputInNaturblick2022Style(resultDicts[0])
+
 
     return output
 
@@ -214,40 +213,54 @@ def upload_file_browser():
 
         audioPath = uploadPostedFile(request)
         cfg.outputDir = uploadDirTemp
-        cfg.terminalOutputFormat = 'summeryJson'
-        terminalOutputs, outputPaths = inference.processFiles(model, audioPath)
+        cfg.terminalOutputFormat = 'summary'
         
-        # ToDo better
-        output = json.loads(terminalOutputs[0])
-
-
+        resultDicts = inference.processFiles(model, audioPath)
+        summary = resultDicts[0]['summary']
+        
+        
         htmlStr = '<!doctype html>'
         htmlStr += '<title>Bird Identification</title>'
-        htmlStr += '<h1>Upload Audio File</h1>'
+        htmlStr += '<h2>Identify Birds in Audio File</h2>'
+        htmlStr += '<br>'
         htmlStr += '<form method=post enctype=multipart/form-data>'
         htmlStr += '<input type=file name=file>'
         htmlStr += '<input type=submit value=Upload>'
         htmlStr += '</form>'
 
-        htmlStr += '<h3>Results</h3>'
-        htmlStr += '<ol>'
-        htmlStr += '<li><a target="_blank" rel="noopener noreferrer" href="' + refSysLinkPrefix + output['result'][0]['nameLat'].replace(' ', '%20') + '">' + output['result'][0]['nameDt'] + '</a>&nbsp;(' + output['result'][0]['nameLat'] + ')&nbsp;&nbsp;[' + str(output['result'][0]['score']) + '%]</li>'
-        htmlStr += '<li><a target="_blank" rel="noopener noreferrer" href="' + refSysLinkPrefix + output['result'][1]['nameLat'].replace(' ', '%20') + '">' + output['result'][1]['nameDt'] + '</a>&nbsp;(' + output['result'][1]['nameLat'] + ')&nbsp;&nbsp;[' + str(output['result'][1]['score']) + '%]</li>'
-        htmlStr += '<li><a target="_blank" rel="noopener noreferrer" href="' + refSysLinkPrefix + output['result'][2]['nameLat'].replace(' ', '%20') + '">' + output['result'][2]['nameDt'] + '</a>&nbsp;(' + output['result'][2]['nameLat'] + ')&nbsp;&nbsp;[' + str(output['result'][2]['score']) + '%]</li>'
-        htmlStr += '</ol>'
-
         htmlStr += '<br>'
 
-        for outputPath in outputPaths:
-            filename = os.path.basename(outputPath)
+        htmlStr += '<h3>Result Summary</h3>'
+        htmlStr += '<ol>'
+
+        numOfPredictionsToShow = 3
+        for rankIx in range(numOfPredictionsToShow):
+            classIx = summary[rankIx]['ix']
+            name = summary[rankIx]['name']
+            nameSci =  cfg.speciesData.at[classIx, 'sci']
+            score = float("%.1f"%(summary[rankIx]['prob']*100.0))
+            
+            htmlStr += '<li><a target="_blank" rel="noopener noreferrer" href="' + refSysLinkPrefix + nameSci.replace(' ', '%20') + '">' + name + '</a>'
+            # Add scientific name in brackets if not chosen anyway
+            if name != nameSci: htmlStr += '&nbsp;(' + nameSci + ')'
+            htmlStr += '&nbsp;&nbsp;[' + str(score) + '%]</li>'
+        
+
+        htmlStr += '</ol>'
+        htmlStr += '<br>'
+        htmlStr += '<h3>Result Files</h3>'
+        
+        for filename in resultDicts[0]['outputFiles']:
             htmlStr += '<a href="' + url_for('download', filename=filename) + '">' + filename + '</a><br>'
 
+        
         return htmlStr
         
     return '''
     <!doctype html>
     <title>Bird Identification</title>
-    <h1>Upload Audio File</h1>
+    <h2>Identify Birds in Audio File</h2>
+    <br>
     <form method=post enctype=multipart/form-data>
       <input type=file name=file>
       <input type=submit value=Upload>
@@ -258,7 +271,7 @@ def upload_file_browser():
 def download(filename):
 
     # Offer file in uploadDirTemp for download
-    print('Download', uploadDirTemp, filename)
+    print('Download', uploadDirTemp, filename, flush=True)
     return send_from_directory(directory=uploadDirTemp, path=filename, as_attachment=True)
 
 
@@ -300,12 +313,12 @@ if __name__ == "__main__":
     freeze_support()
 
     # Parse arguments
-    parser = argparse.ArgumentParser(description='Identify birds in audio file')
+    parser = argparse.ArgumentParser(description='Identify birds in audio files')
 
     # Flask args
     parser.add_argument('-H', '--host', default=host, metavar='', help='Host name or IP address of API endpoint server. Defaults to \'' + host + '\'')
     parser.add_argument('-p', '--port', type=int, default=port, metavar='', help='Port of API endpoint server. Defaults to ' + str(port))
-
+    parser.add_argument('--serverOutputFormat', type=str, default=serverOutputFormat, metavar='', help='Format of server output. Value in [summaryJson, resultDictJson, naturblick2022]. Defaults to ' + serverOutputFormat + '.')
 
     # Inference args
     parser = inference.addAndParseConfigParams(parser)
@@ -315,6 +328,11 @@ if __name__ == "__main__":
 
     port = args.port
     host = args.host
+    serverOutputFormat = args.serverOutputFormat
+
+    if serverOutputFormat not in serverOutputFormatsValid:
+        serverOutputFormat = 'summaryJson'
+        print('Warning: serverOutputFormat not valid, set to summaryJson', flush=True)
 
 
 
