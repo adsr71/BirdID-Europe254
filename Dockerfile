@@ -8,7 +8,7 @@ RUN apt-get install ffmpeg -y
 
 
 # Add python packages
-RUN conda install pysoundfile librosa ffmpeg-python python-magic -c conda-forge -y
+RUN conda install pysoundfile librosa resampy ffmpeg-python python-magic -c conda-forge -y
 RUN conda install flask pandas openpyxl -c anaconda -y
 
 RUN conda clean --all -y
