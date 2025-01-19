@@ -55,7 +55,7 @@ segmentPooling = 'max' # mean max meanexp
 
 printFreq = 100
 dataLoaderTimeOut = 0 #20
-
+inferenceAttemptsMax = 2
 
 
 
@@ -136,6 +136,7 @@ def getConfig():
         'segmentPooling': segmentPooling,
         'printFreq': printFreq,
         'dataLoaderTimeOut': dataLoaderTimeOut,
+        'inferenceAttemptsMax': inferenceAttemptsMax,
         'modelSize': modelSize,
         'modelTorchScriptPath': modelTorchScriptPath,
         'nCpuWorkers': nCpuWorkers,
@@ -188,6 +189,7 @@ def setConfig(c):
     global segmentPooling
     global printFreq
     global dataLoaderTimeOut
+    global inferenceAttemptsMax
     global modelSize
     global modelTorchScriptPath
     global nCpuWorkers
@@ -235,6 +237,7 @@ def setConfig(c):
     segmentPooling = c['segmentPooling']
     printFreq = c['printFreq']
     dataLoaderTimeOut = c['dataLoaderTimeOut']
+    inferenceAttemptsMax = c['inferenceAttemptsMax']
     modelSize = c['modelSize']
     modelTorchScriptPath = c['modelTorchScriptPath']
     nCpuWorkers = c['nCpuWorkers']
