@@ -242,7 +242,7 @@ sudo apt install docker.io
 
 Build Docker container:
 ```
-sudo DOCKER_BUILDKIT=1 docker build Dockerfile -t birdid-europe254 .
+sudo DOCKER_BUILDKIT=1 docker build -f Dockerfile -t birdid-europe254 .
 ```
 
 <b>NOTE</b>: You need to run docker build again whenever you make changes to the scripts.
