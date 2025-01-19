@@ -80,7 +80,9 @@ useFloat16InPkl = False # To reduce pkl file size predictions are casted from np
 sortSpecies = False # Sort order of species columns by max value in text output files (e.g. in raw_excel, raw_csv)
 outputPrecision = 5 # Number of decimal places for results in output files
 
-terminalOutputFormat = 'summery' # summery, summeryJson, naturblick2022, ammodJson, resultDictJson
+# NNN
+#terminalOutputFormat = 'summery' # summery, summeryJson, naturblick2022, ammodJson, resultDictJson
+terminalOutputFormat = 'summary' # summary, summaryJson, resultDictJson, naturblick2022, ammodJson, none
 
 csvDelimiter = ';'
 
@@ -93,7 +95,7 @@ minConfidence = 0.75
 channelPooling = 'max' # max mean (todo: None)
 mergeLabels = False
 
-nameType = 'de' # sci en de (ix id)
+nameType = 'sci' # sci en de (ix id)
 
 
 
