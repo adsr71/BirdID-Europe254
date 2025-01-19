@@ -79,7 +79,7 @@ cd BirdID-Europe254
 ## Setup (Windows)
 You can use Anaconda and install the requirements listed above (see Anaconda (recommended)) or download and use the already packaged version from here:
 
-[birdid-europe254 Windows](https://www.tierstimmenarchiv.de/download/birdid-europe254.zip)
+[BirdID-Europe254 for Windows](https://www.tierstimmenarchiv.de/download/birdid-europe254.zip)
 
 1. Download zip file
 2. Unpack zip file (needs approx. 5.5 GB of free disk space)
@@ -119,11 +119,11 @@ Complete list of command line arguments:
   -f , --batchSizeFiles 
                         Number of files to preprocess in parallel (if input path is directory). Defaults to 16.
   -b , --batchSizeInference 
-                        Number of segments to process in parallel (by GPU). Defaults to 16.
+                        Number of segments to process in parallel (by GPU). Defaults to 8.
   -c , --nCpuWorkers    Number of CPU workers to prepare segments for inference. Defaults to 4.
   -o , --outputDir      Directory for result output file(s). Defaults to directory of input path.
   --fileOutputFormats [ ...]
-                        Format of output file(s). List of values in [raw_pkl, raw_excel, raw_csv, labels_excel, labels_csv, labels_audacity, labels_raven]. Defaults to raw_pkl raw_excel labels_excel.
+                        Format of output file(s). List of values in [raw_pkl, raw_excel, raw_csv, labels_excel, labels_csv, labels_audacity, labels_raven]. Defaults to raw_pkl raw_excel labels_excel].
   --minConfidence       Minimum confidence threshold. Value between 0.01 and 0.99. Defaults to 0.75.
   --channelPooling      Pooling method to aggregate predictions from different channels. Value in [max, mean]. Defaults to max.
   --mergeLabels         Merge overlapping/adjacent species labels.
