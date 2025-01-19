@@ -69,11 +69,11 @@ conda install librosa ffmpeg-python timm python-magic -c conda-forge
 conda install flask pandas openpyxl -c anaconda
 ```
 
-Clone the repository
+Download or clone the repository
 
 ```
-git clone https://code.naturkundemuseum.berlin/tsa/birdid-europe254-2103.git
-cd birdid-europe254-2103
+git clone https://github.com/adsr71/BirdID-Europe254.git
+cd BirdID-Europe254
 ```
 
 ## Setup (Windows)
