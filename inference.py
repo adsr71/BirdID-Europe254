@@ -100,6 +100,9 @@ def addAndParseConfigParams(parser):
     
 
     cfg.modelSize = args.modelSize
+    # NNN
+    cfg.batchSizeFiles = args.batchSizeFiles
+
 
     cfg.batchSizeInference = args.batchSizeInference
     cfg.nCpuWorkers = args.nCpuWorkers
@@ -225,6 +228,8 @@ def init():
         print('nCpuWorkers', cfg.nCpuWorkers, flush=True)
         print('gpuMode', cfg.gpuMode, flush=True)
         print('batchSizeInference', cfg.batchSizeInference, flush=True)
+        print('batchSizeFiles', cfg.batchSizeFiles, flush=True) # NNN
+
     else:
         # Suppress ”SourceChangeWarning” (Needed?)
         warnings.filterwarnings("ignore")
