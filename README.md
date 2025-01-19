@@ -19,6 +19,8 @@ The models are developed at the [Museum für Naturkunde Berlin](https://www.muse
 
 [Lasseck M (2019) Bird Species Identification in Soundscapes. In: CEUR Workshop Proceedings.](http://ceur-ws.org/Vol-2380/paper_86.pdf)
 
+[Lasseck M (2023) Bird Species Recognition using Convolutional Neural Networks with Attention on Frequency Bands. In: CEUR Workshop Proceedings.](https://ceur-ws.org/Vol-3497/paper-175.pdf)
+
 Current models included in this repo are advanced versions specifically designed to work well for audio files and soundscape recordings containing European bird species. They are already used in practice in different biodiversity monitoring projects like e.g. [AMMOD](https://ammod.de/) and [DeViSe](https://www.idmt.fraunhofer.de/de/institute/projects-products/projects/devise.html).
 
 Parts of the scripts and usage scenarios are inspired by [BirdNET](https://github.com/kahst/BirdNET-Analyzer), a similar application to identify birds in audio data. BirdNET is a very popular and already well established tool for bird identification and monitoring in various projects and institutions. In contrast to our application BirdNET is based on TensorFlow instead of PyTorch, it can identify more species (including non European birds) and optionally uses additional geografic information to filter species by location. Advantages of the application in this repo over BirdNET include better GPU support (faster inference), better identification performance for some species and scenarios and more flexible input/output options (e.g. multi-channel inference, variable segment duration, selecting start/end times or channels for inference, etc.)
