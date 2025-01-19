@@ -1,0 +1,46 @@
+FROM  python:3.9-slim
+
+RUN apt-get update
+RUN apt-get install ffmpeg -y
+
+# Install pytorch wheels dependencies
+RUN apt install libjpeg-dev libopenblas-dev libopenmpi-dev libomp-dev -y
+RUN rm -rf /var/lib/apt/lists/*
+
+RUN pip install setuptools==58.3.0
+RUN pip install Cython
+RUN pip install gdown
+
+# Download wheels for torch & torchvision (https://github.com/Qengineering/PyTorch-Raspberry-Pi-64-OS)
+RUN gdown https://drive.google.com/uc?id=1uLkZzUdx3LiJC-Sy_ofTACfHgFprumSg
+RUN gdown https://drive.google.com/uc?id=1AhbkLqKd8EZO2pZV_g9aFZGHZo2Ubc3O
+
+# Install wheels
+RUN pip install torch-1.13.0a0+git7c98e70-cp39-cp39-linux_aarch64.whl
+RUN pip install torchvision-0.14.0a0+5ce4506-cp39-cp39-linux_aarch64.whl
+
+# Remove wheels
+RUN rm torch-1.13.0a0+git7c98e70-cp39-cp39-linux_aarch64.whl
+RUN rm torchvision-0.14.0a0+5ce4506-cp39-cp39-linux_aarch64.whl
+
+# Add more python packages
+RUN pip install pysoundfile 
+RUN pip install librosa
+RUN pip install resampy
+RUN pip install ffmpeg-python 
+RUN pip install python-magic 
+RUN pip install flask 
+RUN pip install pandas
+RUN pip install openpyxl
+
+
+WORKDIR /workspace
+RUN chmod -R a+w /workspace
+
+COPY / /workspace
+
+EXPOSE 4000
+
+#CMD ["python", "server.py", "--channels", "1", "-ov", "0", "-b", "12", "-c", "1", "--fileOutputFormats"]
+
+
