@@ -81,6 +81,9 @@ sortSpecies = False # Sort order of species columns by max value in text output 
 outputPrecision = 5 # Number of decimal places for results in output files
 
 # NNN
+includeFilePathInOutputFiles = False # Include file path in output files
+
+
 terminalOutputFormat = 'summary' # summary, summaryJson, resultDictJson, naturblick2022, none
 
 csvDelimiter = ';'
@@ -146,6 +149,10 @@ def getConfig():
         'inputPath': inputPath,
         'outputDir': outputDir,
         'fileOutputFormats': fileOutputFormats,
+        'useFloat16InPkl': useFloat16InPkl,
+        'sortSpecies': sortSpecies,
+        'outputPrecision': outputPrecision,
+        'includeFilePathInOutputFiles': includeFilePathInOutputFiles,
         'terminalOutputFormat': terminalOutputFormat,
         'csvDelimiter': csvDelimiter,
         'errorLogPath': errorLogPath,
@@ -199,6 +206,10 @@ def setConfig(c):
     global inputPath
     global outputDir
     global fileOutputFormats
+    global useFloat16InPkl
+    global sortSpecies
+    global outputPrecision
+    global includeFilePathInOutputFiles
     global terminalOutputFormat
     global csvDelimiter
     global errorLogPath
@@ -247,6 +258,10 @@ def setConfig(c):
     inputPath = c['inputPath']
     outputDir = c['outputDir']
     fileOutputFormats = c['fileOutputFormats']
+    useFloat16InPkl = c['useFloat16InPkl']
+    sortSpecies = c['sortSpecies']
+    outputPrecision = c['outputPrecision']
+    includeFilePathInOutputFiles = c['includeFilePathInOutputFiles']
     terminalOutputFormat = c['terminalOutputFormat']
     csvDelimiter = c['csvDelimiter']
     errorLogPath = c['errorLogPath']

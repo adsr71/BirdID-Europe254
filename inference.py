@@ -62,6 +62,7 @@ def addAndParseConfigParams(parser):
     parser.add_argument('--useFloat16InPkl', action='store_true', default=cfg.useFloat16InPkl, help='Reduce pkl file size by casting prediction values to float16. ')
     parser.add_argument('--outputPrecision', type=int, default=cfg.outputPrecision, metavar='', help='Number of decimal places for values in text output files. Defaults to ' + str(cfg.outputPrecision) + '.')
     parser.add_argument('--sortSpecies', action='store_true', default=cfg.sortSpecies, help='Sort order of species columns in raw data files or rows in label files by max value.')
+    parser.add_argument('--includeFilePathInOutputFiles', action='store_true', default=cfg.includeFilePathInOutputFiles, help='Include file path in output files.')
     parser.add_argument('--csvDelimiter', type=str, default=cfg.csvDelimiter, metavar='', help='Delimiter used in CSV files. Defaults to ' + str(cfg.csvDelimiter) + '.')
     
 
@@ -113,6 +114,7 @@ def addAndParseConfigParams(parser):
     cfg.sortSpecies = args.sortSpecies
     cfg.outputPrecision = args.outputPrecision
     cfg.csvDelimiter = args.csvDelimiter
+    cfg.includeFilePathInOutputFiles = args.includeFilePathInOutputFiles
     
     cfg.terminalOutputFormat = args.terminalOutputFormat
     
@@ -888,10 +890,18 @@ def writeResultToFile(resultDict, outputDir, fileOutputFormats):
                 #classNamesSorted = list(np.array(classNames)[colMaxIxs])
                 # Reorder cols via index
                 df = df.iloc[:,colMaxIxs]
+
+            # NNN    
+            if cfg.includeFilePathInOutputFiles:
+                # Add filePath, startTimes, endTimes at first, second and third column
+                df.insert(0, 'filePath', resultDict['filePath'])
+                df.insert(1, 'startTime [s]', resultDict['startTimes'])
+                df.insert(2, 'endTime [s]', resultDict['endTimes'])
+            else:
+                # Add startTimes, endTimes at first and second column
+                df.insert(0, 'startTime [s]', resultDict['startTimes'])
+                df.insert(1, 'endTime [s]', resultDict['endTimes'])       
             
-            # Add startTimes, endTimes at first and second column
-            df.insert(0, 'startTime [s]', resultDict['startTimes'])
-            df.insert(1, 'endTime [s]', resultDict['endTimes'])
 
             # Format start & end times to ms precision but remove trailing zeros
             #df['startTime [s]'] = df['startTime [s]'].map(lambda x: ('%.3f' % x).rstrip('0').rstrip('.'))
@@ -975,6 +985,11 @@ def writeResultToFile(resultDict, outputDir, fileOutputFormats):
             if cfg.mergeLabels:
                 df = mergeOverlappingLabels(df)
 
+            # NNN
+            if cfg.includeFilePathInOutputFiles:
+                # Add filePath at last column
+                df['filePath'] = resultDict['filePath']
+
             #print(df, flush=True)
 
             if 'labels_excel' in fileOutputFormats:
@@ -991,6 +1006,11 @@ def writeResultToFile(resultDict, outputDir, fileOutputFormats):
 
             if 'labels_audacity' in fileOutputFormats:
                 df_audacity = df.copy()
+
+                # NNN
+                if cfg.includeFilePathInOutputFiles:
+                    # Remove col filePath
+                    df_audacity = df_audacity.drop(columns=['filePath'])
 
                 # Check if there are any labels (predictions above threshold)
                 if len(df_audacity.index):
