@@ -131,6 +131,8 @@ Complete list of command line arguments:
   --useFloat16InPkl     Reduce pkl file size by casting prediction values to float16
   --outputPrecision     Number of decimal places for values in text output files. Defaults to 5.
   --sortSpecies         Sort order of species columns in raw data files or rows in label files by max value.
+  --includeFilePathInOutputFiles 
+                        Include file path in output files.
   --csvDelimiter        Delimiter used in CSV files. Defaults to ;.
   --speciesPath         Path to custom species metadata file or folder. If a folder is provided, the file needs to be named "species.csv". Defaults to species.csv.
   --errorLogPath        Path to error log file. Defaults to error-log.txt in outputDir.
