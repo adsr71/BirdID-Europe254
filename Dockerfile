@@ -1,5 +1,6 @@
 #FROM  pytorch/pytorch:1.12.1-cuda11.3-cudnn8-runtime
-FROM  pytorch/pytorch:1.13.1-cuda11.6-cudnn8-runtime
+#FROM  pytorch/pytorch:1.13.1-cuda11.6-cudnn8-runtime
+FROM  pytorch/pytorch:2.6.0-cuda12.4-cudnn9-runtime
 
 
 # Install audio libs (e.g. ffmpeg)
@@ -8,7 +9,7 @@ RUN apt-get install ffmpeg -y
 
 
 # Add python packages
-RUN conda install pysoundfile librosa resampy ffmpeg-python python-magic -c conda-forge -y
+RUN conda install librosa resampy ffmpeg-python python-magic -c conda-forge -y
 RUN conda install flask pandas openpyxl -c anaconda -y
 
 RUN conda clean --all -y
