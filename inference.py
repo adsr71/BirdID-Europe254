@@ -15,6 +15,9 @@ from PIL import Image
 import magic
 mime = magic.Magic(mime=True)
 
+# NNN
+import torchaudio.transforms as T
+
 from collections import OrderedDict
 import csv
 from multiprocessing import cpu_count, freeze_support, Pool
@@ -579,44 +582,89 @@ def readAndPreprocessAudioFile(audioPath, startTime=0.0, endTime=None, channels=
     # Apply HP filter
     if cfg.debug:
         print('Applying high pass filter', flush=True)
-    audioData = apply_high_pass_filter(audioData, sample_rate_src)
+    audioData = apply_high_pass_filter(audioData, sample_rate_src) # dtype is float64 after filter
     
     
+    
+    ## Resample
 
-    # Resample
+    # ToDo: add resampleModule as config parameter
+    resampleModule = 'torchaudio' # 'librosa' or 'torchaudio'
+    
     if sample_rate_src != cfg.samplerate:
 
         if cfg.debug:
-            print('Resample', sample_rate_src, '>', cfg.samplerate, flush=True)
+            print('Resample', sample_rate_src, '>', cfg.samplerate, 'using', resampleModule, flush=True)
 
-        # Make sure audio_data is in correct format for librosa processing
-        if n_channels > 1:
-            audioData = np.transpose(audioData)     # [n_frames x n_channels] --> [n_channels x n_frames]
+        if resampleModule == 'torchaudio':
+
+            # Reshape and convert to torch tensor
+            audioDataTorch = np.transpose(audioData)            # [n_frames x n_channels] --> [n_channels x n_frames]
+            audioDataTorch = torch.from_numpy(audioDataTorch)
+
+            ## Simulating librosa resampling
+
+            # # kaiser_best
+            # lowpass_filter_width = 64
+            # rolloff = 0.9475937167399596
+            # resampling_method = "sinc_interp_kaiser"
+            # beta = 14.769656459379492
+
+            # kaiser_fast
+            lowpass_filter_width = 16
+            rolloff = 0.85
+            resampling_method = "sinc_interp_kaiser"
+            beta = 8.555504641634386
+
+            resampler = T.Resample(
+                sample_rate_src,
+                cfg.samplerate,
+                lowpass_filter_width=lowpass_filter_width,
+                rolloff=rolloff,
+                resampling_method=resampling_method,
+                beta=beta,
+                dtype=audioDataTorch.dtype,
+            )
+
+            audioDataTorchResampled = resampler(audioDataTorch)
+
+            # Convert back to numpy
+            audioData = audioDataTorchResampled.numpy()
+            # Resahpe to sound file format [n_channels x n_frames] --> [n_frames x n_channels]
+            audioData = np.transpose(audioData)
+
         else:
-            audioData = audioData[:,0]              # [n_frames x 1] --> (n_frames,)
 
+            # Make sure audio_data is in correct format for librosa processing
+            if n_channels > 1:
+                audioData = np.transpose(audioData)     # [n_frames x n_channels] --> [n_channels x n_frames]
+            else:
+                audioData = audioData[:,0]              # [n_frames x 1] --> (n_frames,)
 
-        # # Normalize to -3dB
-        # audioData /= np.max(audioData)
-        # audioData *= 0.71
+            # # Normalize to -3dB
+            # audioData /= np.max(audioData)
+            # audioData *= 0.71
 
-        # librosa needs Fortran-contiguous audio buffer (maybe not needed anymore)
-        if not audioData.flags["F_CONTIGUOUS"]: audioData = np.asfortranarray(audioData)
+            # librosa needs Fortran-contiguous audio buffer (maybe not needed anymore)
+            #if not audioData.flags["F_CONTIGUOUS"]: audioData = np.asfortranarray(audioData)
 
-        audioData = librosa.resample(audioData, orig_sr=sample_rate_src, target_sr=cfg.samplerate, res_type='kaiser_fast')
+            audioData = librosa.resample(audioData, orig_sr=sample_rate_src, target_sr=cfg.samplerate, res_type='kaiser_fast')
+            #audioData = librosa.resample(audioData, orig_sr=sample_rate_src, target_sr=cfg.samplerate, res_type='soxr_hq')
+            
 
-        # Reshape to sound file format [n_frames x n_channels]
-        if n_channels > 1:
-            audioData = np.transpose(audioData)                 # [n_channels x n_frames] --> [n_frames x n_channels]
-        else:
-            audioData = np.reshape(audioData, (-1, n_channels)) # (n_frames,) --> [n_frames x 1]
+            # Reshape to sound file format [n_frames x n_channels]
+            if n_channels > 1:
+                audioData = np.transpose(audioData)                 # [n_channels x n_frames] --> [n_frames x n_channels]
+            else:
+                audioData = np.reshape(audioData, (-1, n_channels)) # (n_frames,) --> [n_frames x 1]
     
+
     # # Normalize to -3dB
     # audioData /= np.max(audioData)
     # audioData *= 0.71
 
-
-    #print('sample_rate_src', sample_rate_src, 'n_channels', n_channels, 'audioData.shape', audioData.shape, flush=True)
+    # if cfg.debug:
+    #     print('sample_rate_src', sample_rate_src, 'n_channels', n_channels, 'audioData.shape', audioData.shape, flush=True)
 
     # Return audio data and (maybe modified) startTime, endTime, channels
     return audioData, startTime, endTime, channels
@@ -1290,8 +1338,12 @@ def processFiles(model, audioPath):
             try:
                 # Create data loader
                 loader = torch.utils.data.DataLoader(audioDataSetObj, batch_size=cfg.batchSizeInference, shuffle=False, num_workers=cfg.nCpuWorkers, pin_memory=True, timeout=cfg.dataLoaderTimeOut)
+                if cfg.debug:
+                    print('DataLoader created.', flush=True)
                 # Get predictions (outputs of size nSegments, nClasses)
                 outputs = predictSegmentsInParallel(loader, model)
+                if cfg.debug:
+                    print('Inference done.', flush=True)
                 inferenceSuccess = True
             except:
                 msg = 'Error: Inference failed at attempt {}\n{}'.format(inferenceAttempts+1, traceback.format_exc())
@@ -1300,6 +1352,7 @@ def processFiles(model, audioPath):
                 inferenceSuccess = False
 
             inferenceAttempts += 1
+        
         
 
         # Iterate over files in batch and collect predictions per file
