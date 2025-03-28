@@ -1,8 +1,4 @@
-#FROM pytorch/pytorch:1.12.1-cuda11.3-cudnn8-runtime
-#FROM pytorch/pytorch:1.13.1-cuda11.6-cudnn8-runtime
-#FROM pytorch/pytorch:2.4.1-cuda11.8-cudnn9-runtime
-#FROM pytorch/pytorch:2.6.0-cuda12.4-cudnn9-runtime
-FROM pytorch/pytorch:2.6.0-cuda12.6-cudnn9-runtime
+FROM pytorch/pytorch:1.13.1-cuda11.6-cudnn8-runtime
 
 
 # Install audio libs (e.g. ffmpeg)
@@ -11,8 +7,8 @@ RUN apt-get install ffmpeg -y
 
 
 # Add python packages
-RUN conda install librosa resampy openpyxl ffmpeg-python python-magic -c conda-forge -y
-RUN conda install flask pandas -c anaconda -y
+RUN conda install python-magic=0.4.27 -c conda-forge -y
+RUN pip install openpyxl==3.0.10 ffmpeg-python==0.2.0 flask==1.1.2 pandas==1.4.3 numpy==1.22.3 librosa==0.9.2 resampy==0.4.2 
 
 
 RUN conda clean --all -y
@@ -29,3 +25,5 @@ COPY . /workspace/
 EXPOSE 4000
 
 #CMD ["python", "server.py"]
+
+# sudo DOCKER_BUILDKIT=1 docker build --no-cache -f Dockerfile -t birdid-europe254-v250326-1 .

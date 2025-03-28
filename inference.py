@@ -16,7 +16,10 @@ import magic
 mime = magic.Magic(mime=True)
 
 # NNN
-import torchaudio.transforms as T
+resampleModule = 'librosa' # 'librosa' or 'torchaudio'
+if resampleModule == 'torchaudio':
+    import torchaudio.transforms as T
+
 
 from collections import OrderedDict
 import csv
@@ -586,11 +589,7 @@ def readAndPreprocessAudioFile(audioPath, startTime=0.0, endTime=None, channels=
     
     
     
-    ## Resample
-
-    # ToDo: add resampleModule as config parameter
-    resampleModule = 'torchaudio' # 'librosa' or 'torchaudio'
-    
+    # Resample if needed
     if sample_rate_src != cfg.samplerate:
 
         if cfg.debug:
@@ -672,8 +671,8 @@ def readAndPreprocessAudioFile(audioPath, startTime=0.0, endTime=None, channels=
 def resizeSpecImage(specImage, imageSize):
 
     specImagePil = Image.fromarray(specImage.astype(np.uint8))
-    specImagePil = specImagePil.resize(imageSize, Image.LANCZOS) # deprecated
-    #specImagePil = specImagePil.resize(imageSize, Image.Resampling.LANCZOS) 
+    #specImagePil = specImagePil.resize(imageSize, Image.LANCZOS) # deprecated
+    specImagePil = specImagePil.resize(imageSize, Image.Resampling.LANCZOS) 
     # Cast to int8
     specImageResized = np.array(specImagePil, dtype=np.uint8)
     #print('SpecImageResized.shape', SpecImageResized.shape, flush=True)
@@ -1329,6 +1328,7 @@ def processFiles(model, audioPath):
 
         if cfg.debug:
             print('nSegmentsPerBatchOfFiles', nSegmentsPerBatchOfFiles, flush=True)
+            print('ElapsedTime Preprocessing', time.time()-startTimeProcessFile, flush=True)
 
 
         # If inference fails (happens in rare cases), try again
