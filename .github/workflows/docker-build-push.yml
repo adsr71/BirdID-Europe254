@@ -9,7 +9,7 @@ on:
 env:
   REGISTRY: ghcr.io
   #IMAGE_NAME: adsr71/birdid-europe254-v250327-1
-  IMAGE_NAME: mfn-berlin/birdid-europe254-v250327-1
+  IMAGE_NAME: mfn-berlin/birdid-europe254-v250331-1
 
 jobs:
   build-and-push:

@@ -1,8 +1,11 @@
 #FROM pytorch/pytorch:1.12.1-cuda11.3-cudnn8-runtime
 #FROM pytorch/pytorch:1.13.1-cuda11.6-cudnn8-runtime
 #FROM pytorch/pytorch:2.4.1-cuda11.8-cudnn9-runtime
+# conda env all2410 (not better than 2.6.0)
+#FROM pytorch/pytorch:2.4.1-cuda12.4-cudnn9-runtime
 #FROM pytorch/pytorch:2.6.0-cuda12.4-cudnn9-runtime
 FROM pytorch/pytorch:2.6.0-cuda12.6-cudnn9-runtime
+
 
 
 # Install audio libs (e.g. ffmpeg)
@@ -29,6 +32,7 @@ RUN apt-get install ffmpeg -y
 RUN conda install python-magic -c conda-forge -y
 #RUN pip install openpyxl ffmpeg-python flask pandas librosa==0.9.2 resampy==0.4.2
 RUN pip install openpyxl ffmpeg-python flask pandas resampy librosa==0.9.2 
+#RUN pip install openpyxl ffmpeg-python flask pandas resampy librosa==0.10.2.post1 # 0.10.2.post1 slow
 
 
 
