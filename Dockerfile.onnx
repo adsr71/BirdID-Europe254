@@ -1,0 +1,22 @@
+# python 3.13 slim
+FROM python:3-slim-bullseye
+
+
+
+# Install audio libs (e.g. ffmpeg)
+RUN apt-get update
+RUN apt-get install ffmpeg -y
+RUN apt-get install libmagic1 -y
+
+
+
+# Add python packages
+#RUN pip install python-magic openpyxl ffmpeg-python flask pandas numpy librosa==0.9.2 resampy==0.4.2 onnxruntime setuptools image
+RUN pip install python-magic openpyxl ffmpeg-python flask pandas numpy librosa resampy onnxruntime setuptools image
+
+
+WORKDIR /workspace
+RUN chmod -R a+w /workspace
+
+COPY . /workspace/
+
