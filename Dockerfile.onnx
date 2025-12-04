@@ -28,6 +28,8 @@ COPY README.md /workspace/
 COPY server_onnx.py /workspace/
 COPY species.csv /workspace/
 
+EXPOSE 4000
+
 
 
 
