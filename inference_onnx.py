@@ -244,7 +244,7 @@ def init():
 
     #cudnn.benchmark = True # Not working otherwise ?
 
-# def loadOnnxModel():
+# def loadModel():
 
 #     available_providers = ort.get_available_providers()
 
@@ -262,7 +262,7 @@ def init():
     
 #     return ort_session
 
-def loadOnnxModel():
+def loadModel():
 
     available_providers = ort.get_available_providers()
 
@@ -1212,7 +1212,7 @@ def getResultDict(paramDict):
         return None     
 
 
-def processFilesOnnx(ort_session, audioPath):
+def processFiles(ort_session, audioPath):
     if cfg.debug:
         startTimeProcessFile = time.time()
 
@@ -1328,7 +1328,7 @@ def processFilesOnnx(ort_session, audioPath):
 #     # initialized by init_worker
 #     return worker_audio_dataset[segmentIx]
 
-# def processFilesOnnx(ort_session, audioPath):
+# def processFiles(ort_session, audioPath):
 #     if cfg.debug:
 #         startTimeProcessFile = time.time()
 
@@ -1477,8 +1477,8 @@ if __name__ == "__main__":
     #resultDicts = processFiles(model, audioPath)
     
     # onnx
-    ort_session = loadOnnxModel()
-    resultDicts = processFilesOnnx(ort_session, audioPath)
+    ort_session = loadModel()
+    resultDicts = processFiles(ort_session, audioPath)
 
 
 
