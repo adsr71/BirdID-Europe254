@@ -18,5 +18,16 @@ RUN pip install python-magic openpyxl ffmpeg-python flask pandas numpy librosa r
 WORKDIR /workspace
 RUN chmod -R a+w /workspace
 
-COPY . /workspace/
+#COPY . /workspace/
+COPY example/ /workspace/example/
+COPY onnx/ /workspace/onnx/
+COPY config.py /workspace/
+COPY inference_onnx.py /workspace/
+COPY LICENSE /workspace/
+COPY README.md /workspace/
+COPY server_onnx.py /workspace/
+COPY species.csv /workspace/
+
+
+
 
